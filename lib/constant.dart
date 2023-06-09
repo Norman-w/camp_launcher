@@ -15,7 +15,7 @@ class  Constant {
   static const String serverUrlHeartbeat = "$serverUrlApi/heartbeat";
 
   //获取二维码路径
-  static const String serverUrlGetQRCode = "$serverUrlApi/getQRCode";
+  static const String serverUrlGetQRCode = "$serverUrlApi/getLoginQrCode";
 
   //获取二维码的超时时间
   static const int serverUrlGetQRCodeTimeout = 60;
