@@ -2,11 +2,13 @@
 //倒计时时间到了以后重新获取二维码并执行上述步骤,周而复始.
 //region 导入需要的库
 import 'dart:async';
+import 'dart:ui';
 
 import 'package:camp_launcher/enum.dart';
 import 'package:flutter/material.dart';
 //使用dio库
 import 'package:dio/dio.dart';
+import 'package:uuid/uuid.dart';
 import 'constant.dart';
 //endregion
 //region 创建有状态组件
@@ -19,218 +21,277 @@ class BarcodeAutoRefreshShower extends StatefulWidget {
 //region 创建有状态组件的状态类
 class _BarcodeAutoRefreshShowerState extends State<BarcodeAutoRefreshShower> {
   //region 定义需要的变量
+  //当前的UI状态
+  EnumUIStatus uiStatus = EnumUIStatus.unknown;
   //当前要显示的图片对象,获取二维码时这个值是空的,使用loading展示.
-  Image? _barcodeImage;
-  //当前剩余时间秒数
-  int _remainingSeconds = Constant.serverUrlGetQRCodeTimeout;
+  Image? _qrCodeImage;
+  //获取二维码的开始时间,搭配serverUrlGetQRCodeTimeout检查是否超时
+  DateTime? _getQRCodeStartTime;
+  //获取到当前二维码的时间是啥时候
+  DateTime? qrCodeStartTime;
+  //获取到的二维码的过期时间是啥时候
+  DateTime? qrCodeExpireTime;
+  //二维码下面的提示文字,用于显示二维码的剩余时间
+  String? _tipUnderQrCode;
+  //二维码遮罩层上的提示文字,用于在二维码失效的时候显示在遮罩层上方
+  //根据这个值是否为null,判断是否显示mask,另外显示这个tip的时候都会顺带显示一个 重新获取 的按钮
+  String? _tipOnQrCodeMask;
+  //本次启动的sceneId/ sceneStr
+  String? sceneStr;
+
+
   //endregion
   //region 定义需要的方法
   //初始化了组件后就开始获取二维码,获取时使用loading展示,获取失败了再loading位置显示失败
   @override
   void initState() {
     super.initState();
-    //获取二维码
-    _getQRCode();
-    //开始倒计时
-    _startCountdown();
+    //开始异步获取二维码
+    _getQRCode(Constant.serverUrlGetQRCodeTimeoutMS);
   }
-  //倒计时
-  void _startCountdown() {
-    //定义一个计时器,每隔1秒执行一次
+  //当网络错误或者二维码过期以后,点击重新获取的那个按钮时候的回调.
+  void _onClickReGetQrCode(){
+    //执行_getQRCode
+    _getQRCode(Constant.serverUrlGetQRCodeTimeoutMS);
+    //通过设置_tipOnQrCodeMask隐藏mask,提示,和按钮
+    setState(() {
+      _tipOnQrCodeMask = null;
+    });
+  }
+  //开始执行二维码的剩余时间倒计时动态显示.
+  void _startQrCodeRemainingCountDown(DateTime start, Duration duration){
+    //结束时间
+    var end = start.add(duration);
+    //开始倒计时_tipUnderQrCode上显示倒计时时间
     Timer.periodic(const Duration(seconds: 1), (timer) {
-      //调试输出剩余时间
-      print('剩余时间:$_remainingSeconds');
-      //如果剩余时间大于0
-      if (_remainingSeconds > 0) {
-        //将剩余时间减1
+      var now = DateTime.now();
+      //如果已经超时了,显示超时信息,停止计时器
+      if(now.isAfter(end)){
+        //倒计时结束后,_tipUnderQrCode消失,_tipOnQrCodeMask显示二维码已过期
         setState(() {
-          _remainingSeconds--;
+          uiStatus = EnumUIStatus.qrCodeExpired;
+          _getQRCodeStartTime = null;
+          qrCodeStartTime = null;
+          // qrCodeExpireTime = DateTime.now();
+          _tipOnQrCodeMask = "二维码已过期,请重新获取";
+          _tipUnderQrCode = null;
         });
-      } else {
-        //否则,停止计时器
         timer.cancel();
-        //重新获取二维码
-        // _getQRCode();
+        return;
       }
+      //每一秒刷新一次
+      var remainingSeconds = end.difference(now).abs().inSeconds;
+      setState(() {
+        _tipUnderQrCode = "请在$remainingSeconds秒内扫描二维码";
+      });
+      //每秒请求一次登录是否成功
+      if(uiStatus != EnumUIStatus.userLoggedIn) {
+        //登录尚未成功,仍然需要检查
+        _checkLoginResult();
+      }
+      else{
+        timer.cancel();
+        debugPrint('已经登录成功了,不检查了,定时器也销毁了');
+      }
+    });
+  }
+  void _checkLoginResult(){
+    if(sceneStr == null){
+      debugPrint('还没有生成sceneStr呢检查什么登录:::???');
+      return;
+    }
+    var dioOption = BaseOptions(
+      connectTimeout: const Duration(seconds: 3000),
+      receiveTimeout: const Duration(seconds: 3000),
+      receiveDataWhenStatusError: true,
+    );
+    var dio = Dio(dioOption);
+    var parameters = {
+      "sceneStr" : sceneStr,
+    };
+    dio.post(Constant.serverUrlCheckQrCodeScan,data: parameters).then((value) {
+      debugPrint('登录校验结果:$value');
+      var loginSuccess = value.data!= null && value.data['message'] == "success" &&
+      value.data['data']!= null && "${value.data['data']}".length>32;
+      if(loginSuccess){
+        debugPrint('登录上来了,在_checkLoginResult里');
+        setState(() {
+          uiStatus = EnumUIStatus.userLoggedIn;
+        });
+      }
+    }
+    ).catchError((e){
+      debugPrint('获取登录结果错误:$e');
     });
   }
   //获取二维码
-  void _getQRCode() {
-    var url = Constant.serverUrlGetQRCode;
-    print('请求地址:'+url);
-    //执行网络请求,使用dio
-    var dio = Dio();
-    dio.get(url).then((response) {
-      //请求成功
-      if (response.statusCode == 200) {
-        //调试输出请求
-        print('请求成功'+response.data.toString());
-        //将返回的二维码图片地址赋值给_barcodeImage
-        setState(() {
-          _barcodeImage = Image.network(response.data['qrCodeUrl']);
-          //将返回的二维码有效时间赋值给_remainingSeconds
-          // _remainingSeconds = response.data['expire_seconds'];
-          _remainingSeconds = 5;
-        });
+  void _getQRCode(int timeoutMS) {
+    //如果已经在获取了,返回
+    if(_getQRCodeStartTime!= null || uiStatus == EnumUIStatus.qrCodeLoading){
+      //已经在获取了,重复的请求.
+      return;
+    }
+    //开始获取的时间设置为当前时间.
+    _getQRCodeStartTime = DateTime.now();
+    uiStatus = EnumUIStatus.qrCodeLoading;
+
+    //生成一个新的sceneStr
+    sceneStr = const Uuid().v4();
+    debugPrint('生成的sceneStr:$sceneStr');
+
+    //请求前对请求client进行一些配置,超时时间等.
+    var option = BaseOptions(
+      receiveDataWhenStatusError: true,
+      connectTimeout: Duration(milliseconds: timeoutMS),
+      receiveTimeout: Duration(milliseconds: timeoutMS),
+    );
+    //初始化请求客户端.
+    var dio = Dio(option);
+    try {
+      var parameters = {
+        "sceneStr":sceneStr
+      };
+      //执行异步请求.
+      dio.request(Constant.serverUrlGetQRCode,queryParameters: parameters).then((value) {
+        //网络层面请求成功,但是接口返回的数据内容现在还不确定
+        var errCode = int.parse("${value.data["errcode"] ?? 0}");
+        var errMsg = "${value.data['errmsg']}";
+        //如果errCode不是0的话,检查errCode的内容,把errMsg显示在_tipOnQrCodeMask
+        if (errCode != 0) {
+          setState(() {
+            _tipOnQrCodeMask = "获取二维码错误:\r\n$errMsg";
+            uiStatus = EnumUIStatus.qrCodeLoadFailed;
+            _getQRCodeStartTime = null;
+          });
+          return;
+        }
+        //如果errCode是0的话,提取图片链接
+        // var imgUrl = "${value.data["qrCodeUrl"]}";
+        var imgUrl = Constant.wechatQrCodeGettingWithTicketUrlPrefix + value.data["ticket"];
+        debugPrint('图片地址:$imgUrl');
+        //加载图片
+        try {
+          var img = Image.network(imgUrl,
+              width: Constant.qrCodeSize,
+              height: Constant.qrCodeSize,
+              errorBuilder: (_, __, ___) => Text('图片加载错误,地址:$imgUrl')
+          );
+          //加载图片成功后显示在上面_tipOnQrCodeMask的内容清空
+          // _tipOnQrCodeMask = null;
+          //qrCodeStartTime是当前时间
+          var start = DateTime.now();
+          //qrCodeExpireTime是获取到的时间加上持续时间
+          var qrCodeDurationTime = Duration(
+              seconds: int.parse("${value.data['expireSeconds'] ?? 300}"));
+          //开始倒计时
+          _startQrCodeRemainingCountDown(start, qrCodeDurationTime);
+          setState(() {
+            _qrCodeImage = img;
+            uiStatus = EnumUIStatus.qrCodeShowing;
+            qrCodeStartTime = start;
+          });
+        } on Exception catch (e) {
+          //加载图片失败后再页面上的_tipOnQrCodeMask显示错误内容
+          setState(() {
+            _tipOnQrCodeMask = '获取二维码图片错误:\r\n$e';
+          });
+        }
       }
-    }).catchError((error) {
-      //调试输出请求
-      print('请求失败'+error.toString());
-      //请求失败
-      setState(() {
-        //将_remainingSeconds设置为0
-        _remainingSeconds = 0;
-        //将_barcodeImage设置为null
-        _barcodeImage = null;
-      });
-    });
+      ).
+      //网络请求错误如果是因为请求超时了,设置_tipOnQrCodeMask为请求超时
+
+      //网络请求错误如果是因为其他原因了,设置_tipOnQrCodeMask上为网络错误+具体错误信息
+
+      //输出错误信息:
+      catchError((error) {
+        debugPrint('catchError捕获到错误:$error');
+          setState(() {
+            _tipOnQrCodeMask = "请求二维码图像发生错误";
+            uiStatus = EnumUIStatus.qrCodeLoadFailed;
+            _getQRCodeStartTime = null;
+          });
+      }
+      );
+    } on DioException catch (e)
+    {
+       debugPrint('请求错误:${e.message}');
+       setState(() {
+         _tipOnQrCodeMask = "请求二维码图像发生异常";
+         uiStatus = EnumUIStatus.qrCodeLoadFailed;
+         _getQRCodeStartTime = null;
+       });
+    }
   }
   //endregion
   //region 重写构建方法
   @override
   Widget build(BuildContext context) {
-    //进入程序以后开始获取二维码
-    //获取二维码的超时时间为Constant里面定义的
-    //获取完了以后展示在页面上,显示倒计时
-    //倒计时时间到了以后继续重复获取二维码,并且获取完了以后展示二维码和倒计时
-    //如果获取二维码失败了,显示失败,提示点击刷新
-    EnumUIState uiState = EnumUIState.loadingBarcode;
-    //如果_barcodeImage不为空,说明获取二维码成功了
-    if (_barcodeImage != null) {
-      //如果剩余时间大于0,说明二维码还没有过期
-      if (_remainingSeconds > 0) {
-        //设置uiState为显示二维码
-        uiState = EnumUIState.barcodeShowing;
-      } else {
-        //否则,设置uiState为显示二维码过期
-        uiState = EnumUIState.barcodeExpired;
-      }
-    } else {
+    if(uiStatus == EnumUIStatus.userLoggedIn){
+      return const Center(
+        child: Text("登录成功"),
+      );
     }
-    //根据uiState的值,返回不同的组件
-    switch (uiState) {
-    //如果是加载二维码中
-      case EnumUIState.loadingBarcode:
-      //返回一个加载中的组件
-        return const Center(
-          child: CircularProgressIndicator(),
-        );
-    //如果是二维码显示并倒计时中等待扫码
-      case EnumUIState.barcodeShowing:
-      //返回一个带有二维码图片和倒计时的组件
-        return Column(
-          children: [
-            //二维码图片
-            _barcodeImage!,
-            //倒计时
-            Text('剩余时间:$_remainingSeconds'),
-          ],
-        );
-    //如果是二维码失效等待点击重新获取
-      case EnumUIState.barcodeExpired:
-      //二维码图片组件
-      var barcodeImage = _barcodeImage!;
-      //遮罩层组件
-      var barcodeImageMask = Container(
-        //设置遮罩层的宽度和高度
-        width: barcodeImage.width,
-        height: barcodeImage.height,
-        //设置遮罩层的圆角
-        decoration: const BoxDecoration(
-          borderRadius: BorderRadius.all(Radius.circular(10)),
-          color: Colors.black54,
-        ),
-        //设置遮罩层的内边距
-        padding: const EdgeInsets.all(10),
-        //遮罩层里面的内容
+    if (uiStatus == EnumUIStatus.qrCodeLoading) {
+      return const Center(
+        child: CircularProgressIndicator(),
+      );
+    }
+    var mask = _tipOnQrCodeMask == null ? null
+        : Container(
+      decoration: BoxDecoration(
+        border: Border.all(color: Colors.grey, width: 0.01),
+      ),
+      child: SizedBox(width: 200, height: 200,
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            //遮罩层里面的上面添加二维码已过期的提示
-            const Text('二维码已过期,请点击刷新'),
-            //遮罩层里面的下面放一个刷新按钮,点击按钮可以刷新二维码
+            Text(_tipOnQrCodeMask!),
+            const SizedBox(height: 20,),
             ElevatedButton(
-              onPressed: () {
-                //重新获取二维码
-                _getQRCode();
-                //开始倒计时
-                _startCountdown();
-              },
-              child: const Text('刷新'),
-            ),
+                onPressed: _onClickReGetQrCode, child: const Text("重新获取")),
           ],
-        ),
-      );
-      //二维码上面添加遮罩层,圆角并且有padding
-      return Stack(
-        children: [
-          //二维码图片
-          barcodeImage,
-          //遮罩层
-          barcodeImageMask,
-        ],
-      );
-      //遮罩层里面的上面添加二维码已过期的提示
-      //遮罩层里面的下面放一个刷新按钮,点击按钮可以刷新二维码
-    //如果是二维码扫码成功正在登录
-      case EnumUIState.barcodeScanned:
-      //返回一个带有二维码图片和倒计时的组件
-        return Column(
-          children: [
-            //二维码图片
-            _barcodeImage!,
-            //倒计时
-            Text('二维码已过期,请点击刷新'),
-          ],
-        );
-    //如果是二维码扫码失败提示中
-      case EnumUIState.barcodeScanFailed:
-      //返回一个带有二维码图片和倒计时的组件
-        return Column(
-          children: [
-            //二维码图片
-            _barcodeImage!,
-            //倒计时
-            Text('二维码已过期,请点击刷新'),
-          ],
-        );
-    //如果是游戏启动中
-      case EnumUIState.gameLaunching:
-      //返回一个带有二维码图片和倒计时的组件
-        return Column(
-          children: [
-            //二维码图片
-            _barcodeImage!,
-            //倒计时
-            Text('二维码已过期,请点击刷新'),
-          ],
-        );
-    // //如果是游戏启动失败
-    // case EnumUIState.gameLaunchFailed:
-    //   //返回一个带有二维码图片和倒计时的组件
-    //   return Column(
-    //     children: [
-    //       //二维码图片
-    //       _barcodeImage!,
-    //       //倒计时
-    //       Text('二维码已过期,请点击刷新'),
-    //     ],
-    //   );
-    // //如果是游戏启动成功
-    // case EnumUIState.gameLaunched:
-    //   //返回一个带有二维码图片和倒计时的组件
-    //   return Column(
-    //     children: [
-    //       //二维码图片
-    //       _barcodeImage!,
-    //       //倒计时
-    //       Text('二维码已过期,请点击刷新'),
-    //     ],
-    //   );
-      default:
-        return const Center(
-          child: CircularProgressIndicator(),
-        );
-    }
+        ),),
+    );
+    return Container(
+      decoration: BoxDecoration(border: Border.all(color: Colors.grey, width: 0.01)),
+      child: Column(
+        // mainAxisSize: MainAxisSize.max,
+        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.center,
+        //上面显示二维码和错误信息的一个层
+          children:
+          [
+            Stack(
+            children: [
+              Center(
+                child: _qrCodeImage == null
+                    ? const SizedBox()
+                    : _qrCodeImage!,
+              ),
+              if(mask != null)
+                Center(
+                  child: ClipRect(
+                    child: BackdropFilter(
+                    /// 过滤器
+                    filter: ImageFilter.blur(sigmaX: 5, sigmaY: 5),
+                    /// 必须设置一个空容器
+                    child: SizedBox(width: 200,height: 200,),
+                    ),
+                  ),
+                ),
+              //在屏幕中心显示mask,让mask不是靠顶端对齐
+              if(mask != null)
+                Center(
+                  child: mask,
+                ),
+            ],
+          ),
+            // 下面显示提示信息的
+            Text(_tipUnderQrCode??"⏳")
+          ]
+      ),
+    );
   }
   //endregion
 }

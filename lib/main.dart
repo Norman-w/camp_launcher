@@ -1,9 +1,12 @@
+import 'dart:io';
+
+import 'package:camp_launcher/common/win_utils.dart';
 import 'package:flutter/material.dart';
-import 'constant.dart';
-import 'component/header.dart';
 import 'barcode_auto_refresh_shower.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await initWindow();
   runApp(const MyApp());
 }
 
@@ -14,8 +17,9 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Camp',
+      debugShowCheckedModeBanner: false,
       theme: ThemeData(
-        primarySwatch: Colors.blue,
+        primarySwatch: Colors.grey,
       ),
       home: const MyHomePage(),
     );
@@ -34,9 +38,38 @@ class _MyHomePageState extends State<MyHomePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Camp'),
+        title: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            const Text("Camp"),
+            IconButton(onPressed: (){
+
+            },
+                tooltip: "设置",
+                icon: const Icon(Icons.settings)
+            ),
+            IconButton(
+              icon: const Icon(Icons.close),
+              color: Colors.black,
+              tooltip: "退出",
+              onPressed: () {
+                exit(0);
+              },
+            )
+          ],
+        )
       ),
-      body: const BarcodeAutoRefreshShower(),
+      body:
+      Container(
+        decoration: BoxDecoration(
+          image: DecorationImage(
+            fit: BoxFit.cover,
+            image: AssetImage('assets/back.jpeg')
+          )
+        ),
+        child: const BarcodeAutoRefreshShower(),
+      ),
+
     );
   }
 }
