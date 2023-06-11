@@ -9,7 +9,7 @@ class  Constant {
   static const String serverUrl = _serverUrlTest;
 
   //api路径
-  static const String serverUrlApi = "$serverUrl/common";
+  static const String serverUrlApi = "$serverUrl/Common";
 
   //心跳包上报路径
   static const String serverUrlHeartbeat = "$serverUrlApi/heartbeat";
@@ -25,7 +25,7 @@ class  Constant {
   static const double qrCodeSize = 200;
 
   //验证登录接口路径
-  static const String serverUrlCheckQrCodeScan = "$serverUrlApi/checkLoginQrCode";
+  static const String serverUrlCheckQrCodeScan = "$serverUrlApi/CheckLoginQrCode";
   // static const String serverUrlCheckQrCodeScan = "http://camp.norman.wang/wechat/wxLogin";
 
   //从游戏启动到检测到进程的超时时间

@@ -8,7 +8,6 @@ import 'package:camp_launcher/enum.dart';
 import 'package:flutter/material.dart';
 //使用dio库
 import 'package:dio/dio.dart';
-import 'package:uuid/uuid.dart';
 import 'constant.dart';
 //endregion
 //region 创建有状态组件
@@ -95,24 +94,35 @@ class _BarcodeAutoRefreshShowerState extends State<BarcodeAutoRefreshShower> {
       }
     });
   }
+  //检查登录结果
   void _checkLoginResult(){
     if(sceneStr == null){
       debugPrint('还没有生成sceneStr呢检查什么登录:::???');
       return;
     }
+    //网络请求设置
     var dioOption = BaseOptions(
       connectTimeout: const Duration(seconds: 3000),
       receiveTimeout: const Duration(seconds: 3000),
       receiveDataWhenStatusError: true,
     );
+    //网络请求器
     var dio = Dio(dioOption);
+    //请求参数
     var parameters = {
       "sceneStr" : sceneStr,
     };
+    //请求
     dio.post(Constant.serverUrlCheckQrCodeScan,data: parameters).then((value) {
       debugPrint('登录校验结果:$value');
-      var loginSuccess = value.data!= null && value.data['message'] == "success" &&
-      value.data['data']!= null && "${value.data['data']}".length>32;
+      //java服务接口的校验
+      // var loginSuccess = value.data!= null && value.data['message'] == "success" &&
+      // value.data['data']!= null && "${value.data['data']}".length>32;
+      //C#服务接口的校验
+      var loginSuccess = value.data!= null && (value.data["errCode"] == 0 || value.data["errCode"] == null)
+      && value.data["openId"]!= null && value.data["openId"].toString().length>10
+      && value.data["sessionKey"]!= null && value.data["sessionKey"].toString().length>10
+      && value.data["gameStartGuid"]!= null && value.data["gameStartGuid"].toString().length>10;
       if(loginSuccess){
         debugPrint('登录上来了,在_checkLoginResult里');
         setState(() {
@@ -136,7 +146,8 @@ class _BarcodeAutoRefreshShowerState extends State<BarcodeAutoRefreshShower> {
     uiStatus = EnumUIStatus.qrCodeLoading;
 
     //生成一个新的sceneStr
-    sceneStr = const Uuid().v4();
+    // sceneStr = const Uuid().v4();
+    sceneStr = DateTime.now().millisecondsSinceEpoch.toString();
     debugPrint('生成的sceneStr:$sceneStr');
 
     //请求前对请求client进行一些配置,超时时间等.
@@ -236,6 +247,7 @@ class _BarcodeAutoRefreshShowerState extends State<BarcodeAutoRefreshShower> {
         child: CircularProgressIndicator(),
       );
     }
+    //遮罩层,当获取二维码失败时,显示错误信息并提供重新获取按钮,虚化已经失效的二维码
     var mask = _tipOnQrCodeMask == null ? null
         : Container(
       decoration: BoxDecoration(
@@ -273,10 +285,10 @@ class _BarcodeAutoRefreshShowerState extends State<BarcodeAutoRefreshShower> {
                 Center(
                   child: ClipRect(
                     child: BackdropFilter(
-                    /// 过滤器
+                    // 过滤器
                     filter: ImageFilter.blur(sigmaX: 5, sigmaY: 5),
-                    /// 必须设置一个空容器
-                    child: SizedBox(width: 200,height: 200,),
+                    // 必须设置一个空容器
+                    child: const SizedBox(width: Constant.qrCodeSize,height: Constant.qrCodeSize,),
                     ),
                   ),
                 ),

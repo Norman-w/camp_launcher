@@ -1,4 +1,5 @@
 import 'dart:ui';
+import 'package:win32/win32.dart';
 
 import 'package:window_manager/window_manager.dart';
 
