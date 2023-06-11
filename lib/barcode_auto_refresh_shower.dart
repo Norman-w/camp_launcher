@@ -35,8 +35,8 @@ class _BarcodeAutoRefreshShowerState extends State<BarcodeAutoRefreshShower> {
   //二维码遮罩层上的提示文字,用于在二维码失效的时候显示在遮罩层上方
   //根据这个值是否为null,判断是否显示mask,另外显示这个tip的时候都会顺带显示一个 重新获取 的按钮
   String? _tipOnQrCodeMask;
-  //本次启动的sceneId/ sceneStr
-  String? sceneStr;
+  //本次启动的sceneId
+  String? sceneId;
 
 
   //endregion
@@ -96,8 +96,8 @@ class _BarcodeAutoRefreshShowerState extends State<BarcodeAutoRefreshShower> {
   }
   //检查登录结果
   void _checkLoginResult(){
-    if(sceneStr == null){
-      debugPrint('还没有生成sceneStr呢检查什么登录:::???');
+    if(sceneId == null){
+      debugPrint('还没有生成sceneId呢检查什么登录:::???');
       return;
     }
     //网络请求设置
@@ -110,7 +110,7 @@ class _BarcodeAutoRefreshShowerState extends State<BarcodeAutoRefreshShower> {
     var dio = Dio(dioOption);
     //请求参数
     var parameters = {
-      "sceneStr" : sceneStr,
+      "sceneId" : sceneId,
     };
     //请求
     dio.post(Constant.serverUrlCheckQrCodeScan,data: parameters).then((value) {
@@ -145,10 +145,10 @@ class _BarcodeAutoRefreshShowerState extends State<BarcodeAutoRefreshShower> {
     _getQRCodeStartTime = DateTime.now();
     uiStatus = EnumUIStatus.qrCodeLoading;
 
-    //生成一个新的sceneStr
-    // sceneStr = const Uuid().v4();
-    sceneStr = DateTime.now().millisecondsSinceEpoch.toString();
-    debugPrint('生成的sceneStr:$sceneStr');
+    //生成一个新的sceneId
+    // sceneId = const Uuid().v4();
+    sceneId = DateTime.now().millisecondsSinceEpoch.toString();
+    debugPrint('生成的sceneId:$sceneId');
 
     //请求前对请求client进行一些配置,超时时间等.
     var option = BaseOptions(
@@ -160,7 +160,7 @@ class _BarcodeAutoRefreshShowerState extends State<BarcodeAutoRefreshShower> {
     var dio = Dio(option);
     try {
       var parameters = {
-        "sceneStr":sceneStr
+        "sceneId":sceneId
       };
       //执行异步请求.
       dio.request(Constant.serverUrlGetQRCode,queryParameters: parameters).then((value) {
