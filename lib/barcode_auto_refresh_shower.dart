@@ -165,11 +165,23 @@ class _BarcodeAutoRefreshShowerState extends State<BarcodeAutoRefreshShower> {
     try {
       //region 获取设备信息
       //TODO
-      var deviceInfo = DeviceInfo();
+      var deviceInfo = DeviceInfo()
+      ..baseBoard = "baseBoard"
+      ..cpu = "cpu"
+      ..hardDisk = "hardDisk"
+      ..memory = "memory"
+      ..networkCard = "networkCard"
+      ..gpu = "gpu";
       //endregion
       //region 获取进程列表信息
       //TODO
       var processList = <ProcessInfo>[];
+      var mockSelfProcess = ProcessInfo()
+      ..processId = "123"
+      ..processName = "CampLauncher.exe"
+      ..processPath = "d:\\Camp\\"
+      ..processDescription = "mockSelfProcessDescription";
+      processList.add(mockSelfProcess);
       //endregion
       GetLoginQrCodeRequest request = GetLoginQrCodeRequest()
       ..clientSideRequestId = requestId
