@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:camp_launcher/common/win_utils.dart';
 import 'package:flutter/material.dart';
 import 'barcode_auto_refresh_shower.dart';
+import 'component/SettingDialog.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -42,8 +43,16 @@ class _MyHomePageState extends State<MyHomePage> {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             const Text("Camp"),
-            IconButton(onPressed: (){
-
+            IconButton(onPressed: () {
+              showDialog(
+                  context: context,
+                  builder: (context) {
+                    return const SettingDialog();
+                  }).then((value) {
+                if (value != null) {
+                  debugPrint("输入的游戏启动码是:$value");
+                }
+              });
             },
                 tooltip: "设置",
                 icon: const Icon(Icons.settings)
