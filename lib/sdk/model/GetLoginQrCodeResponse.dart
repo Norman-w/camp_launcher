@@ -53,16 +53,18 @@ class GetLoginQRCodeResponse {
     errCode = json['errCode'];
     errMsg = json['errMsg'];
     ticket = json['ticket'];
-    expireTime = json['expireTime'];
+    expireTime = json['expireTime'] == null
+        ? null
+        : DateTime.parse(json['expireTime']);
   }
 
   Map<String, dynamic> toJson() {
-    final Map<String, dynamic> data = new Map<String, dynamic>();
-    data['requestId'] = this.requestId;
-    data['errCode'] = this.errCode;
-    data['errMsg'] = this.errMsg;
-    data['ticket'] = this.ticket;
-    data['expireTime'] = this.expireTime;
+    final Map<String, dynamic> data = <String, dynamic>{};
+    data['requestId'] = requestId;
+    data['errCode'] = errCode;
+    data['errMsg'] = errMsg;
+    data['ticket'] = ticket;
+    data['expireTime'] = expireTime?.toUtc().toString();
     return data;
   }
 }
