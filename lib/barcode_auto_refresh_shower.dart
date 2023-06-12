@@ -177,7 +177,7 @@ class _BarcodeAutoRefreshShowerState extends State<BarcodeAutoRefreshShower> {
       ..deviceInfo = deviceInfo
       ..processList = processList;
       //执行异步请求.
-      dio.post(Constant.serverUrlGetQRCode,queryParameters: request.toJson()).then((value) {
+      dio.post(Constant.serverUrlGetQRCode,data: request.toJson()).then((value) {
         //解析value到GetLoginQrCodeResponse
         var response = GetLoginQRCodeResponse.fromJson(value.data);
         //网络层面请求成功,但是接口返回的数据内容现在还不确定
