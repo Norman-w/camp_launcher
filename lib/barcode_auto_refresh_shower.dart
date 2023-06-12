@@ -196,7 +196,7 @@ class _BarcodeAutoRefreshShowerState extends State<BarcodeAutoRefreshShower> {
         var errCode = response.errCode;
         var errMsg = response.errMsg;
         //如果errCode不是0的话,检查errCode的内容,把errMsg显示在_tipOnQrCodeMask
-        if (errCode != 0 || response.ticket == null || response.ticket!.isEmpty) {
+        if (errCode != null && errCode != 0 || response.ticket == null || response.ticket!.isEmpty) {
           setState(() {
             _tipOnQrCodeMask = "获取二维码错误:\r\n$errMsg";
             uiStatus = EnumUIStatus.qrCodeLoadFailed;
