@@ -5,6 +5,11 @@ import 'dart:async';
 import 'dart:ui';
 
 import 'package:camp_launcher/enum.dart';
+import 'package:camp_launcher/sdk/model/CheckQrCodeRequest.dart';
+import 'package:camp_launcher/sdk/model/DeviceInfo.dart';
+import 'package:camp_launcher/sdk/model/GetLoginQrCodeResponse.dart';
+import 'package:camp_launcher/sdk/model/ProcessInfo.dart';
+import 'package:camp_launcher/sdk/model/GetLoginQrCodeRequest.dart';
 import 'package:flutter/material.dart';
 //使用dio库
 import 'package:dio/dio.dart';
@@ -35,8 +40,8 @@ class _BarcodeAutoRefreshShowerState extends State<BarcodeAutoRefreshShower> {
   //二维码遮罩层上的提示文字,用于在二维码失效的时候显示在遮罩层上方
   //根据这个值是否为null,判断是否显示mask,另外显示这个tip的时候都会顺带显示一个 重新获取 的按钮
   String? _tipOnQrCodeMask;
-  //本次启动的sceneId
-  String? sceneId;
+  //本次启动的requestId
+  String? requestId;
 
 
   //endregion
@@ -96,8 +101,8 @@ class _BarcodeAutoRefreshShowerState extends State<BarcodeAutoRefreshShower> {
   }
   //检查登录结果
   void _checkLoginResult(){
-    if(sceneId == null){
-      debugPrint('还没有生成sceneId呢检查什么登录:::???');
+    if(requestId == null){
+      debugPrint('还没有生成requestId呢检查什么登录:::???');
       return;
     }
     //网络请求设置
@@ -109,11 +114,10 @@ class _BarcodeAutoRefreshShowerState extends State<BarcodeAutoRefreshShower> {
     //网络请求器
     var dio = Dio(dioOption);
     //请求参数
-    var parameters = {
-      "sceneId" : sceneId,
-    };
+    var request = CheckQrCodeRequest()
+    ..requestId = requestId;
     //请求
-    dio.post(Constant.serverUrlCheckQrCodeScan,data: parameters).then((value) {
+    dio.post(Constant.serverUrlCheckQrCodeScan,data: request.toJson()).then((value) {
       debugPrint('登录校验结果:$value');
       //java服务接口的校验
       // var loginSuccess = value.data!= null && value.data['message'] == "success" &&
@@ -147,8 +151,8 @@ class _BarcodeAutoRefreshShowerState extends State<BarcodeAutoRefreshShower> {
 
     //生成一个新的sceneId
     // sceneId = const Uuid().v4();
-    sceneId = DateTime.now().millisecondsSinceEpoch.toString();
-    debugPrint('生成的sceneId:$sceneId');
+    requestId = DateTime.now().millisecondsSinceEpoch.toString();
+    debugPrint('生成的requestId:$requestId');
 
     //请求前对请求client进行一些配置,超时时间等.
     var option = BaseOptions(
@@ -159,16 +163,28 @@ class _BarcodeAutoRefreshShowerState extends State<BarcodeAutoRefreshShower> {
     //初始化请求客户端.
     var dio = Dio(option);
     try {
-      var parameters = {
-        "sceneId":sceneId
-      };
+      //region 获取设备信息
+      //TODO
+      var deviceInfo = DeviceInfo();
+      //endregion
+      //region 获取进程列表信息
+      //TODO
+      var processList = <ProcessInfo>[];
+      //endregion
+      GetLoginQrCodeRequest request = GetLoginQrCodeRequest()
+      ..clientSideRequestId = requestId
+      ..loginTime = DateTime.now()
+      ..deviceInfo = deviceInfo
+      ..processList = processList;
       //执行异步请求.
-      dio.request(Constant.serverUrlGetQRCode,queryParameters: parameters).then((value) {
+      dio.post(Constant.serverUrlGetQRCode,queryParameters: request.toJson()).then((value) {
+        //解析value到GetLoginQrCodeResponse
+        var response = GetLoginQRCodeResponse.fromJson(value.data);
         //网络层面请求成功,但是接口返回的数据内容现在还不确定
-        var errCode = int.parse("${value.data["errcode"] ?? 0}");
-        var errMsg = "${value.data['errmsg']}";
+        var errCode = response.errCode;
+        var errMsg = response.errMsg;
         //如果errCode不是0的话,检查errCode的内容,把errMsg显示在_tipOnQrCodeMask
-        if (errCode != 0) {
+        if (errCode != 0 || response.ticket == null || response.ticket!.isEmpty) {
           setState(() {
             _tipOnQrCodeMask = "获取二维码错误:\r\n$errMsg";
             uiStatus = EnumUIStatus.qrCodeLoadFailed;
@@ -178,7 +194,7 @@ class _BarcodeAutoRefreshShowerState extends State<BarcodeAutoRefreshShower> {
         }
         //如果errCode是0的话,提取图片链接
         // var imgUrl = "${value.data["qrCodeUrl"]}";
-        var imgUrl = Constant.wechatQrCodeGettingWithTicketUrlPrefix + value.data["ticket"];
+        var imgUrl = Constant.wechatQrCodeGettingWithTicketUrlPrefix + response.ticket!;
         debugPrint('图片地址:$imgUrl');
         //加载图片
         try {
