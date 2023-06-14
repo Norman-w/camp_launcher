@@ -17,9 +17,9 @@ Map<String, int> get crc32Map => {
   'assets/NOTICES': 0x0,
 };
 //校验文件完整性
-PackageFilesCheckResult checkFileIntegrity() {
+List<PackageFileCheckResult> checkFileIntegrity() {
   //检查结果
-  PackageFilesCheckResult result = PackageFilesCheckResult();
+  List<PackageFileCheckResult> result = [];
   //遍历所有文件
   for (var file in currentFiles) {
     //如果是文件
@@ -29,9 +29,12 @@ PackageFilesCheckResult checkFileIntegrity() {
       //防止map中没有这个key
       if (!crc32Map.containsKey(relativePath)) {
         ///多出来的文件
-        AssetDiffInfo diffInfo = AssetDiffInfo(null);
-        diffInfo.diffType = AssetDiffType.redundant;
-        result.assetsDiffInfoList.add(diffInfo);
+        PackageFileCheckResult diffInfo = PackageFileCheckResult();
+        diffInfo.diffType = DiffType.redundant;
+        diffInfo.packagePath = relativePath;
+        diffInfo.message = 'D';//多出来的文件 duplicated
+        diffInfo.isOk = false;
+        result.add(diffInfo);
         continue;
       }
       //获取crc32值
@@ -46,30 +49,23 @@ PackageFilesCheckResult checkFileIntegrity() {
         //如果crc32值不一致
         if (crc32Value != crc32) {
           ///校验不一致的文件
-          //添加到差异列表
-          AssetDiffInfo diffInfo = AssetDiffInfo(
-              Asset()
-                ..name = relativePath
-                  ..length = file.lengthSync()
-                    ..crc32 = crc32Value
-                      ..fileContent = Uint8List.fromList(content)
-          )..correctCrc32 = crc32
-          ..diffType = AssetDiffType.crc32NotEqual;
-          result.assetsDiffInfoList.add(diffInfo);
+          PackageFileCheckResult diffInfo = PackageFileCheckResult();
+          diffInfo.diffType = DiffType.crc32NotEqual;
+          diffInfo.packagePath = relativePath;
+          diffInfo.message = 'F';//文件校验问题
+          diffInfo.isOk = false;
+          result.add(diffInfo);
         }
       }
       //给进来的crc32就为空.这通常是服务端问题导致的
       else{
         //添加到差异列表
-        AssetDiffInfo diffInfo = AssetDiffInfo(
-            Asset()
-              ..name = relativePath
-                ..length = file.lengthSync()
-                  ..crc32 = 0
-                    ..fileContent = Uint8List.fromList(file.readAsBytesSync())
-        )..correctCrc32 = 0
-        ..diffType = AssetDiffType.crc32FromServerIsNull;
-        result.assetsDiffInfoList.add(diffInfo);
+        PackageFileCheckResult diffInfo = PackageFileCheckResult();
+        diffInfo.diffType = DiffType.crc32NotEqual;
+        diffInfo.packagePath = relativePath;
+        diffInfo.message = 'SPCE';//服务器传递过来的CRC32为空
+        diffInfo.isOk = false;
+        result.add(diffInfo);
       }
     }
   }
@@ -78,12 +74,12 @@ PackageFilesCheckResult checkFileIntegrity() {
     //如果本地没有这个文件
     if (!currentFiles.any((element) => element.path.replaceAll(currentPath, '') == key)) {
       ///远程有本地没有的文件
-      //添加到差异列表
-      AssetDiffInfo diffInfo = AssetDiffInfo(null)
-        ..name = key
-          ..correctCrc32 = crc32Map[key]!
-            ..diffType = AssetDiffType.missing;
-      result.assetsDiffInfoList.add(diffInfo);
+      PackageFileCheckResult diffInfo = PackageFileCheckResult();
+      diffInfo.diffType = DiffType.missing;
+      diffInfo.packagePath = key;
+      diffInfo.message = 'M';//missing
+      diffInfo.isOk = false;
+      result.add(diffInfo);
     }
   }
   //返回结果

@@ -3,12 +3,13 @@ import 'dart:typed_data';
 import 'package:camp_launcher/model/asset.dart';
 
 //资源包文件校验结果
-class PackageFilesCheckResult{
+class PackageFileCheckResult{
   late bool isOk;
   late String message;
   late String packagePath;
+  late DiffType diffType;
   List<AssetDiffInfo> assetsDiffInfoList = [];
-  PackageFilesCheckResult();
+  PackageFileCheckResult();
 }
 
 //资源文件差异信息
@@ -18,7 +19,7 @@ class AssetDiffInfo extends Asset{
   //正确的文件是什么,通常置空
   late Uint8List? correctFileContent;
   //文件差异类型
-  late AssetDiffType diffType;
+  late DiffType diffType;
   AssetDiffInfo(Asset? asset){
     if(asset == null) {
       return;
@@ -31,7 +32,7 @@ class AssetDiffInfo extends Asset{
 }
 
 //文件差异的类型
-enum AssetDiffType{
+enum DiffType{
   //缺少
   missing,
   //多余
