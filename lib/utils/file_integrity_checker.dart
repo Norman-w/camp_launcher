@@ -63,7 +63,7 @@ List<PackageFileCheckResult> checkFileIntegrity() {
         PackageFileCheckResult diffInfo = PackageFileCheckResult();
         diffInfo.diffType = DiffType.crc32NotEqual;
         diffInfo.packagePath = relativePath;
-        diffInfo.message = 'SPCE';//服务器传递过来的CRC32为空
+        diffInfo.message = 'S P C E';//服务器传递过来的CRC32为空
         diffInfo.isOk = false;
         result.add(diffInfo);
       }
