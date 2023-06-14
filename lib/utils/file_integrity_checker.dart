@@ -17,7 +17,6 @@ Map<String, int> get crc32Map => {
 };
 //校验文件完整性
 void checkFileIntegrity() {
-  var crc32Checker = CRC32Cls();
   //遍历所有文件
   for (var file in currentFiles) {
     //如果是文件
@@ -32,7 +31,7 @@ void checkFileIntegrity() {
         // var content = file.readAsStringSync();
         List<int> content = file.readAsBytesSync();
         //计算crc32值
-        var crc32Value =  crc32Checker.getCRC32Bytes(content);
+        var crc32Value =  CRC32Helper().getCRC32Bytes(content);
         //如果crc32值不一致
         if (crc32Value != crc32) {
           //抛出异常
@@ -120,7 +119,7 @@ class PackFileChecker{
       return String.fromCharCodes(bytes);
     }
     if(!File(packFilePath).existsSync()){
-      debugPrint('包件$packFilePath不存在');
+      debugPrint('包文件$packFilePath不存在');
       return null;
     }
     PackFile packFile = PackFile();
@@ -210,12 +209,18 @@ class PackFileChecker{
 //   }
 // }
 
-class CRC32Cls{
-  List<int> crc32Table = [];
-  CRC32Cls(){
-    getCRC32Table();
+///crc32,原名CRC32Cls
+class CRC32Helper{
+  final List<int> _crc32Table = [];
+  static final CRC32Helper _crc32Cls = CRC32Helper._internal();
+  factory CRC32Helper(){
+    return _crc32Cls;
   }
-  void getCRC32Table(){
+  CRC32Helper._internal(){
+    _getCRC32Table();
+  }
+
+  void _getCRC32Table(){
     for(var i = 0; i < 256; i++){
       var crc = i;
       for(var j = 8; j > 0; j--){
@@ -225,7 +230,7 @@ class CRC32Cls{
           crc >>= 1;
         }
       }
-      crc32Table.add(crc);
+      _crc32Table.add(crc);
     }
   }
   // int getCRC32Str(String sInputString){
@@ -242,7 +247,7 @@ class CRC32Cls{
     var value = 0xffffffff;
     var len = buffer.length;
     for(var i = 0; i < len; i++){
-      value = (value >> 8) ^ crc32Table[(value & 0xFF) ^ buffer[i]];
+      value = (value >> 8) ^ _crc32Table[(value & 0xFF) ^ buffer[i]];
     }
     return value ^ 0xffffffff;
   }
