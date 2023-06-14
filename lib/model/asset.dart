@@ -17,5 +17,5 @@ class Asset{
   late int offset;
   late int length;
   late int crc32;
-  late Uint8List fileContent;
+  late Uint8List? fileContent;
 }

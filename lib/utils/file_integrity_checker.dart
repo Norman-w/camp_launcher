@@ -5,6 +5,7 @@ import 'package:camp_launcher/model/pack_file.dart';
 import 'package:flutter/material.dart';
 
 import '../model/asset.dart';
+import 'pack_files_check_result.dart';
 //检查当前进程所在目录
 get currentPath => Directory.current.path;
 //获取当前路径下的所有文件的目录树
@@ -16,13 +17,23 @@ Map<String, int> get crc32Map => {
   'assets/NOTICES': 0x0,
 };
 //校验文件完整性
-void checkFileIntegrity() {
+PackageFilesCheckResult checkFileIntegrity() {
+  //检查结果
+  PackageFilesCheckResult result = PackageFilesCheckResult();
   //遍历所有文件
   for (var file in currentFiles) {
     //如果是文件
     if (file is File) {
       //获取相对路径
       var relativePath = file.path.replaceAll(currentPath, '');
+      //防止map中没有这个key
+      if (!crc32Map.containsKey(relativePath)) {
+        ///多出来的文件
+        AssetDiffInfo diffInfo = AssetDiffInfo(null);
+        diffInfo.diffType = AssetDiffType.redundant;
+        result.assetsDiffInfoList.add(diffInfo);
+        continue;
+      }
       //获取crc32值
       var crc32 = crc32Map[relativePath];
       //如果crc32值不为空
@@ -34,12 +45,49 @@ void checkFileIntegrity() {
         var crc32Value =  CRC32Helper().getCRC32Bytes(content);
         //如果crc32值不一致
         if (crc32Value != crc32) {
-          //抛出异常
-          throw Exception('文件完整性校验失败：$relativePath');
+          ///校验不一致的文件
+          //添加到差异列表
+          AssetDiffInfo diffInfo = AssetDiffInfo(
+              Asset()
+                ..name = relativePath
+                  ..length = file.lengthSync()
+                    ..crc32 = crc32Value
+                      ..fileContent = Uint8List.fromList(content)
+          )..correctCrc32 = crc32
+          ..diffType = AssetDiffType.crc32NotEqual;
+          result.assetsDiffInfoList.add(diffInfo);
         }
+      }
+      //给进来的crc32就为空.这通常是服务端问题导致的
+      else{
+        //添加到差异列表
+        AssetDiffInfo diffInfo = AssetDiffInfo(
+            Asset()
+              ..name = relativePath
+                ..length = file.lengthSync()
+                  ..crc32 = 0
+                    ..fileContent = Uint8List.fromList(file.readAsBytesSync())
+        )..correctCrc32 = 0
+        ..diffType = AssetDiffType.crc32FromServerIsNull;
+        result.assetsDiffInfoList.add(diffInfo);
       }
     }
   }
+  //验证crc32Map有但是本地没有读取到的,这样的就是本地少的
+  for (var key in crc32Map.keys) {
+    //如果本地没有这个文件
+    if (!currentFiles.any((element) => element.path.replaceAll(currentPath, '') == key)) {
+      ///远程有本地没有的文件
+      //添加到差异列表
+      AssetDiffInfo diffInfo = AssetDiffInfo(null)
+        ..name = key
+          ..correctCrc32 = crc32Map[key]!
+            ..diffType = AssetDiffType.missing;
+      result.assetsDiffInfoList.add(diffInfo);
+    }
+  }
+  //返回结果
+  return result;
 }
 class PackFileChecker{
   // public PackFile LoadPackFile(string packFilePath)
