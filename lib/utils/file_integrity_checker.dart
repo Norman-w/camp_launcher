@@ -10,9 +10,10 @@ get currentPath => Directory.current.path;
 //获取当前路径下的所有文件的目录树
 List<FileSystemEntity> get currentFiles => Directory.current.listSync(recursive: true);
 //要校验的相对路径+文件名+扩展名 所对应的crc32值
-Map<String, String> get crc32Map => {
-  'lib/utils/file_integrity_checker.dart': '0x1c1c1c1c',
-  'lib/utils/file_integrity_checker.g.dart': '0x2c2c2c2c',
+Map<String, int> get crc32Map => {
+  //2个mock数据
+  'assets/AssetManifest.json': 0x0,
+  'assets/NOTICES': 0x0,
 };
 //校验文件完整性
 void checkFileIntegrity() {
