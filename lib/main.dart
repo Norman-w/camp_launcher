@@ -1,6 +1,6 @@
 import 'dart:io';
 
-import 'package:camp_launcher/common/win_utils.dart';
+import 'package:camp_launcher/utils/win_utils.dart';
 import 'package:flutter/material.dart';
 import 'barcode_auto_refresh_shower.dart';
 import 'component/SettingDialog.dart';
