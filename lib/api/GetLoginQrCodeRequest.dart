@@ -18,11 +18,14 @@
 // }
 
 //根据如上C#类生成的dart代码:
-import 'DeviceInfo.dart';
-import 'PlayerInfo.dart';
-import 'ProcessInfo.dart';
+import 'package:camp_launcher/api/GetLoginQrCodeResponse.dart';
 
-class GetLoginQrCodeRequest {
+import 'model/DeviceInfo.dart';
+import 'model/PlayerInfo.dart';
+import 'model/ProcessInfo.dart';
+import 'package:norman_sdk/BaseRequest.dart';
+
+class GetLoginQrCodeRequest extends BaseRequest<GetLoginQRCodeResponse>{
   String? clientSideRequestId;
   String? publicIp;
   DeviceInfo? deviceInfo;
@@ -74,5 +77,10 @@ class GetLoginQrCodeRequest {
     }
     data['loginTime'] = loginTime?.millisecondsSinceEpoch;
     return data;
+  }
+
+  @override
+  allocResponse(Map<String, dynamic>? rspJsonObj) {
+    return GetLoginQRCodeResponse.fromJson(rspJsonObj);
   }
 }

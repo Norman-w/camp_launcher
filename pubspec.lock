@@ -61,10 +61,10 @@ packages:
     dependency: "direct main"
     description:
       name: dio
-      sha256: b99b1d56dc0d5dece70957023af002dbd49614b4a1bf86d3a254af3fe781bdf2
+      sha256: a9d76e72985d7087eb7c5e7903224ae52b337131518d127c554b9405936752b8
       url: "https://pub.flutter-io.cn"
     source: hosted
-    version: "5.2.0+1"
+    version: "5.2.1+1"
   fake_async:
     dependency: transitive
     description:
@@ -99,6 +99,14 @@ packages:
     description: flutter
     source: sdk
     version: "0.0.0"
+  http:
+    dependency: transitive
+    description:
+      name: http
+      sha256: "5895291c13fa8a3bd82e76d5627f69e0d85ca6a30dcac95c4ea19a5d555879c2"
+      url: "https://pub.flutter-io.cn"
+    source: hosted
+    version: "0.13.6"
   http_parser:
     dependency: transitive
     description:
@@ -147,6 +155,13 @@ packages:
       url: "https://pub.flutter-io.cn"
     source: hosted
     version: "1.8.0"
+  norman_sdk:
+    dependency: "direct dev"
+    description:
+      path: "../h1emu/norman_sdk"
+      relative: true
+    source: path
+    version: "0.0.1"
   path:
     dependency: transitive
     description:
@@ -257,5 +272,5 @@ packages:
     source: hosted
     version: "0.3.4"
 sdks:
-  dart: ">=2.19.4 <3.0.0"
+  dart: ">=2.19.6 <3.0.0"
   flutter: ">=3.3.0"

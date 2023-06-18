@@ -34,7 +34,9 @@
 // public DateTime ExpireTime { get; set; }
 // }
 
-class GetLoginQRCodeResponse {
+import 'package:norman_sdk/BaseResponse.dart';
+
+class GetLoginQRCodeResponse extends BaseResponse {
   String? requestId;
   int? errCode;
   String? errMsg;
@@ -48,14 +50,14 @@ class GetLoginQRCodeResponse {
       this.ticket,
       this.expireTime});
 
-  GetLoginQRCodeResponse.fromJson(Map<String, dynamic> json) {
-    requestId = json['requestId'];
-    errCode = json['errCode'];
-    errMsg = json['errMsg'];
-    ticket = json['ticket'];
-    expireTime = json['expireTime'] == null
-        ? null
-        : DateTime.parse(json['expireTime']);
+  factory GetLoginQRCodeResponse.fromJson(Map<String, dynamic>? json) {
+    return GetLoginQRCodeResponse(
+      requestId: json?['requestId'],
+      errCode: json?['errCode'],
+      errMsg: json?['errMsg'],
+      ticket: json?['ticket'],
+      expireTime: DateTime.tryParse(json?['expireTime'] ?? ''),
+    );
   }
 
   Map<String, dynamic> toJson() {

@@ -5,11 +5,11 @@ import 'dart:async';
 import 'dart:ui';
 
 import 'package:camp_launcher/enum.dart';
-import 'package:camp_launcher/sdk/model/CheckQrCodeRequest.dart';
-import 'package:camp_launcher/sdk/model/DeviceInfo.dart';
-import 'package:camp_launcher/sdk/model/GetLoginQrCodeResponse.dart';
-import 'package:camp_launcher/sdk/model/ProcessInfo.dart';
-import 'package:camp_launcher/sdk/model/GetLoginQrCodeRequest.dart';
+import 'api/CheckQrCodeRequest.dart';
+import 'api/model/DeviceInfo.dart';
+import 'api/GetLoginQrCodeResponse.dart';
+import 'api/model/ProcessInfo.dart';
+import 'api/GetLoginQrCodeRequest.dart';
 import 'package:flutter/material.dart';
 //使用dio库
 import 'package:dio/dio.dart';
@@ -105,38 +105,37 @@ class _BarcodeAutoRefreshShowerState extends State<BarcodeAutoRefreshShower> {
       debugPrint('还没有生成requestId呢检查什么登录:::???');
       return;
     }
-    //网络请求设置
-    var dioOption = BaseOptions(
-      connectTimeout: const Duration(seconds: 3000),
-      receiveTimeout: const Duration(seconds: 3000),
-      receiveDataWhenStatusError: true,
-    );
-    //网络请求器
-    var dio = Dio(dioOption);
-    //请求参数
-    var request = CheckQrCodeRequest()
-    ..requestId = requestId;
-    //请求
-    dio.post(Constant.serverUrlCheckQrCodeScan,data: request.toJson()).then((value) {
-      debugPrint('登录校验结果:$value');
-      //java服务接口的校验
-      // var loginSuccess = value.data!= null && value.data['message'] == "success" &&
-      // value.data['data']!= null && "${value.data['data']}".length>32;
-      //C#服务接口的校验
-      var loginSuccess = value.data!= null && (value.data["errCode"] == 0 || value.data["errCode"] == null)
-      && value.data["openId"]!= null && value.data["openId"].toString().length>10
-      && value.data["sessionKey"]!= null && value.data["sessionKey"].toString().length>10
-      && value.data["gameStartGuid"]!= null && value.data["gameStartGuid"].toString().length>10;
-      if(loginSuccess){
-        debugPrint('登录上来了,在_checkLoginResult里');
-        setState(() {
-          uiStatus = EnumUIStatus.userLoggedIn;
-        });
-      }
-    }
-    ).catchError((e){
-      debugPrint('获取登录结果错误:$e');
-    });
+    // //网络请求设置
+    // var dioOption = BaseOptions(
+    //   connectTimeout: const Duration(seconds: 3000),
+    //   receiveTimeout: const Duration(seconds: 3000),
+    //   receiveDataWhenStatusError: true,
+    // );
+    // //网络请求器
+    // var dio = Dio(dioOption);
+    // //请求参数
+    // var request = CheckQrCodeRequest(requestId!);
+    // //请求
+    // dio.post(Constant.serverUrlCheckQrCodeScan,data: request.toJson()).then((value) {
+    //   debugPrint('登录校验结果:$value');
+    //   //java服务接口的校验
+    //   // var loginSuccess = value.data!= null && value.data['message'] == "success" &&
+    //   // value.data['data']!= null && "${value.data['data']}".length>32;
+    //   //C#服务接口的校验
+    //   var loginSuccess = value.data!= null && (value.data["errCode"] == 0 || value.data["errCode"] == null)
+    //   && value.data["openId"]!= null && value.data["openId"].toString().length>10
+    //   && value.data["sessionKey"]!= null && value.data["sessionKey"].toString().length>10
+    //   && value.data["gameStartGuid"]!= null && value.data["gameStartGuid"].toString().length>10;
+    //   if(loginSuccess){
+    //     debugPrint('登录上来了,在_checkLoginResult里');
+    //     setState(() {
+    //       uiStatus = EnumUIStatus.userLoggedIn;
+    //     });
+    //   }
+    // }
+    // ).catchError((e){
+    //   debugPrint('获取登录结果错误:$e');
+    // });
   }
   //获取二维码
   void _getQRCode(int timeoutMS) {

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'dart:convert';
 import 'dart:io';
-import '../sdk/model/ProcessInfo.dart';
+import '../api/model/ProcessInfo.dart';
 import 'package:window_manager/window_manager.dart';
 
 Future<void> initWindow () async {
