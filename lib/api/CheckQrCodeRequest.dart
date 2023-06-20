@@ -5,7 +5,7 @@
 //     public string? RequestId { get; set; }
 // }
 import 'CheckQrCodeResponse.dart';
-import 'package:norman_sdk/BaseRequest.dart';
+import 'package:norman_sdk/baseRequest.dart';
 
 class CheckQrCodeRequest extends BaseRequest<CheckQrCodeResponse> {
   CheckQrCodeRequest();
@@ -19,7 +19,12 @@ class CheckQrCodeRequest extends BaseRequest<CheckQrCodeResponse> {
   }
 
   @override
-  allocResponse(Map<String, dynamic>? rspJsonObj) {
-    return CheckQrCodeResponse.fromJson(rspJsonObj!);
+  CheckQrCodeResponse allocResponse() {
+    return CheckQrCodeResponse(RequestId);
   }
+
+  // @override
+  // allocResponse(Map<String, dynamic>? rspJsonObj) {
+  //   return CheckQrCodeResponse.fromJson(rspJsonObj!);
+  // }
 }

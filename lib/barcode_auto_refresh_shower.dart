@@ -7,12 +7,12 @@ import 'dart:ui';
 import 'package:camp_launcher/enum.dart';
 import 'api/CheckQrCodeRequest.dart';
 import 'api/model/DeviceInfo.dart';
-import 'api/GetLoginQrCodeResponse.dart';
 import 'api/model/ProcessInfo.dart';
 import 'api/GetLoginQrCodeRequest.dart';
 import 'package:flutter/material.dart';
+import 'package:norman_sdk/sdkClient.dart';
 //使用dio库
-import 'package:dio/dio.dart';
+// import 'package:dio/dio.dart';
 import 'constant.dart';
 //endregion
 //region 创建有状态组件
@@ -105,37 +105,24 @@ class _BarcodeAutoRefreshShowerState extends State<BarcodeAutoRefreshShower> {
       debugPrint('还没有生成requestId呢检查什么登录:::???');
       return;
     }
-    // //网络请求设置
-    // var dioOption = BaseOptions(
-    //   connectTimeout: const Duration(seconds: 3000),
-    //   receiveTimeout: const Duration(seconds: 3000),
-    //   receiveDataWhenStatusError: true,
-    // );
-    // //网络请求器
-    // var dio = Dio(dioOption);
-    // //请求参数
-    // var request = CheckQrCodeRequest(requestId!);
-    // //请求
-    // dio.post(Constant.serverUrlCheckQrCodeScan,data: request.toJson()).then((value) {
-    //   debugPrint('登录校验结果:$value');
-    //   //java服务接口的校验
-    //   // var loginSuccess = value.data!= null && value.data['message'] == "success" &&
-    //   // value.data['data']!= null && "${value.data['data']}".length>32;
-    //   //C#服务接口的校验
-    //   var loginSuccess = value.data!= null && (value.data["errCode"] == 0 || value.data["errCode"] == null)
-    //   && value.data["openId"]!= null && value.data["openId"].toString().length>10
-    //   && value.data["sessionKey"]!= null && value.data["sessionKey"].toString().length>10
-    //   && value.data["gameStartGuid"]!= null && value.data["gameStartGuid"].toString().length>10;
-    //   if(loginSuccess){
-    //     debugPrint('登录上来了,在_checkLoginResult里');
-    //     setState(() {
-    //       uiStatus = EnumUIStatus.userLoggedIn;
-    //     });
-    //   }
-    // }
-    // ).catchError((e){
-    //   debugPrint('获取登录结果错误:$e');
-    // });
+    var request = CheckQrCodeRequest()
+    ..RequestId = requestId;
+
+    var sdkClient = SDKClient(Constant.serverUrlApi);
+    sdkClient.execute(request, method: HttpMethod.post).then((rsp) {
+      debugPrint('登录校验结果:${rsp.gameStartGuid}');
+      var loginSuccess = rsp.gameStartGuid != null;
+      if(loginSuccess){
+        //登录成功
+        setState(() {
+          uiStatus = EnumUIStatus.userLoggedIn;
+          _tipUnderQrCode = null;
+          _tipOnQrCodeMask = null;
+        });
+      }
+    }).catchError((error){
+      debugPrint('登录校验失败:$error');
+    });
   }
   //获取二维码
   void _getQRCode(int timeoutMS) {
@@ -153,14 +140,6 @@ class _BarcodeAutoRefreshShowerState extends State<BarcodeAutoRefreshShower> {
     requestId = DateTime.now().millisecondsSinceEpoch.toString();
     debugPrint('生成的requestId:$requestId');
 
-    //请求前对请求client进行一些配置,超时时间等.
-    var option = BaseOptions(
-      receiveDataWhenStatusError: true,
-      connectTimeout: Duration(milliseconds: timeoutMS),
-      receiveTimeout: Duration(milliseconds: timeoutMS),
-    );
-    //初始化请求客户端.
-    var dio = Dio(option);
     try {
       //region 获取设备信息
       //TODO
@@ -182,15 +161,19 @@ class _BarcodeAutoRefreshShowerState extends State<BarcodeAutoRefreshShower> {
       ..processDescription = "mockSelfProcessDescription";
       processList.add(mockSelfProcess);
       //endregion
-      GetLoginQrCodeRequest request = GetLoginQrCodeRequest()
+      var request = GetLoginQrCodeRequest()
       ..clientSideRequestId = requestId
       ..loginTime = DateTime.now()
       ..deviceInfo = deviceInfo
       ..processList = processList;
       //执行异步请求.
-      dio.post(Constant.serverUrlGetQRCode,data: request.toJson()).then((value) {
+      // dio.post(Constant.serverUrlGetQRCode,data: request.toJson()).then((value) {
+      var sdkClient = SDKClient(Constant.serverUrlApi);
+      sdkClient.execute(request, method: HttpMethod.post).then((value) {
         //解析value到GetLoginQrCodeResponse
-        var response = GetLoginQRCodeResponse.fromJson(value.data);
+        // var response = GetLoginQRCodeResponse.fromJson(value.data);
+        debugPrint('执行sdkClient的返回:$value');
+        var response = value;
         //网络层面请求成功,但是接口返回的数据内容现在还不确定
         var errCode = response.errCode;
         var errMsg = response.errMsg;
@@ -218,11 +201,11 @@ class _BarcodeAutoRefreshShowerState extends State<BarcodeAutoRefreshShower> {
           // _tipOnQrCodeMask = null;
           //qrCodeStartTime是当前时间
           var start = DateTime.now();
-          //qrCodeExpireTime是获取到的时间加上持续时间
-          var qrCodeDurationTime = Duration(
-              seconds: int.parse("${value.data['expireSeconds'] ?? 300}"));
+          // var end = response.expireTime ?? start.add(const Duration(seconds: 300));
+          Duration duration = response.expireTime == null? const Duration(seconds: 300)
+          :response.expireTime!.difference(start);
           //开始倒计时
-          _startQrCodeRemainingCountDown(start, qrCodeDurationTime);
+          _startQrCodeRemainingCountDown(start, duration);
           setState(() {
             _qrCodeImage = img;
             uiStatus = EnumUIStatus.qrCodeShowing;
@@ -250,9 +233,9 @@ class _BarcodeAutoRefreshShowerState extends State<BarcodeAutoRefreshShower> {
           });
       }
       );
-    } on DioException catch (e)
+    } catch (e)
     {
-       debugPrint('请求错误:${e.message}');
+       debugPrint('请求错误:$e');
        setState(() {
          _tipOnQrCodeMask = "请求二维码图像发生异常";
          uiStatus = EnumUIStatus.qrCodeLoadFailed;

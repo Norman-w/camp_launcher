@@ -23,7 +23,7 @@ import 'package:camp_launcher/api/GetLoginQrCodeResponse.dart';
 import 'model/DeviceInfo.dart';
 import 'model/PlayerInfo.dart';
 import 'model/ProcessInfo.dart';
-import 'package:norman_sdk/BaseRequest.dart';
+import 'package:norman_sdk/baseRequest.dart';
 
 class GetLoginQrCodeRequest extends BaseRequest<GetLoginQRCodeResponse>{
   String? clientSideRequestId;
@@ -80,7 +80,12 @@ class GetLoginQrCodeRequest extends BaseRequest<GetLoginQRCodeResponse>{
   }
 
   @override
-  allocResponse(Map<String, dynamic>? rspJsonObj) {
-    return GetLoginQRCodeResponse.fromJson(rspJsonObj);
+  GetLoginQRCodeResponse allocResponse() {
+    return GetLoginQRCodeResponse();
   }
+  //
+  // @override
+  // allocResponse(Map<String, dynamic>? rspJsonObj) {
+  //   return GetLoginQRCodeResponse.fromJson(rspJsonObj);
+  // }
 }

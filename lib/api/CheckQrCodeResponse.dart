@@ -19,7 +19,7 @@
 // public string? GameStartGuid { get; set; }
 // }
 
-import 'package:norman_sdk/BaseResponse.dart';
+import 'package:norman_sdk/baseResponse.dart';
 
 class CheckQrCodeResponse extends BaseResponse {
   String? openId;
@@ -34,14 +34,24 @@ class CheckQrCodeResponse extends BaseResponse {
   }
 
   @override
-  factory CheckQrCodeResponse.fromJson(Map<String, dynamic> json) {
-    return CheckQrCodeResponse(
-      json['requestId'],
-      openId: json['openId'],
-      sessionKey: json['sessionKey'],
-      gameStartGuid: json['gameStartGuid'],
-      errCode: json['errCode'],
-      errMsg: json['errMsg'],
-    );
+  fill(Map<String, dynamic> json) {
+      RequestId = json['requestId'];
+      openId = json['openId'];
+      sessionKey = json['sessionKey'];
+      gameStartGuid = json['gameStartGuid'];
+      ErrCode = json['errCode'];
+      ErrMsg = json['errMsg'];
   }
+
+  // @override
+  // factory CheckQrCodeResponse.fromJson(Map<String, dynamic> json) {
+  //   return CheckQrCodeResponse(
+  //     json['requestId'],
+  //     openId: json['openId'],
+  //     sessionKey: json['sessionKey'],
+  //     gameStartGuid: json['gameStartGuid'],
+  //     errCode: json['errCode'],
+  //     errMsg: json['errMsg'],
+  //   );
+  // }
 }
