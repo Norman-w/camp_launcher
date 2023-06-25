@@ -30,12 +30,10 @@ class CheckQrCodeResponse extends BaseResponse {
       {this.openId, this.sessionKey, this.gameStartGuid, String? errCode, String? errMsg}) {
     super.ErrCode = errCode;
     super.ErrMsg = errMsg;
-    super.RequestId = requestId;
   }
 
   @override
   fill(Map<String, dynamic> json) {
-      RequestId = json['requestId'];
       openId = json['openId'];
       sessionKey = json['sessionKey'];
       gameStartGuid = json['gameStartGuid'];

@@ -15,7 +15,7 @@ class  Constant {
   static const String serverUrlHeartbeat = "$serverUrlApi/heartbeat";
 
   //websocket路径
-  static const String serverUrlWebSocket = "$serverUrlApi/websocket";
+  static const String serverUrlWebSocket = "wss://camp.norman.wang/ws";
 
   //获取二维码路径
   static const String serverUrlGetQRCode = "$serverUrlApi/getLoginQrCode";
