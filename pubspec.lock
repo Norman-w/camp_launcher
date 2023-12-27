@@ -156,9 +156,9 @@ packages:
     source: hosted
     version: "1.8.0"
   norman_sdk:
-    dependency: "direct dev"
+    dependency: "direct main"
     description:
-      path: "../h1emu/norman_sdk"
+      path: "../norman_sdk_flutter"
       relative: true
     source: path
     version: "0.0.1"
@@ -272,5 +272,5 @@ packages:
     source: hosted
     version: "0.3.4"
 sdks:
-  dart: ">=2.19.6 <3.0.0"
+  dart: ">=2.19.4 <3.0.0"
   flutter: ">=3.3.0"
