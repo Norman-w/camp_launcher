@@ -10,7 +10,7 @@ import 'api/model/DeviceInfo.dart';
 import 'api/model/ProcessInfo.dart';
 import 'api/GetLoginQrCodeRequest.dart';
 import 'package:flutter/material.dart';
-import 'package:norman_sdk/sdkClient.dart';
+import 'package:norman_sdk/sdk_client.dart';
 //使用dio库
 // import 'package:dio/dio.dart';
 import 'constant.dart';
